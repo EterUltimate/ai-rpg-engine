@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # 前端开发服务器
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - gateway
+
+  # Go API网关
+  gateway:
+    build:
+      context: ./backend/gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - GAME_ENGINE_URL=http://game-engine:8001
+      - AI_ENGINE_URL=http://ai-engine:8002
+    depends_on:
+      - game-engine
+      - ai-engine
+
+  # 游戏引擎服务
+  game-engine:
+    build:
+      context: ./backend/services/game-engine
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./database:/app/database
+    environment:
+      - DATABASE_URL=sqlite:///app/database/game.db
+
+  # AI推理服务
+  ai-engine:
+    build:
+      context: ./backend/services/ai-engine
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./models:/app/models
+      - ./database:/app/database
+    environment:
+      - LLM_MODEL_PATH=/app/models/llm/model.gguf
+      - CHROMADB_PATH=/app/database/chromadb
+
+volumes:
+  database:
+  models:

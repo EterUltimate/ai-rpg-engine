@@ -1,0 +1,46 @@
+# Git Attributes for AI-RPG Engine
+
+# ============================================
+# 文本文件 - 自动转换行尾
+# ============================================
+*.txt text
+*.md text
+*.json text
+*.yaml text
+*.yml text
+*.toml text
+*.xml text
+*.html text
+*.css text
+*.js text
+*.ts text
+*.jsx text
+*.tsx text
+*.py text
+*.go text
+*.sh text
+*.bat text
+*.ps1 text
+
+# ============================================
+# 数据文件 - 受 DATA_LICENSE.md 约束
+# 建议: 使用 Git LFS 或单独下载
+# ============================================
+*.bin binary
+*.sqlite binary
+*.sqlite3 binary
+*.db binary
+*.gguf binary
+*.faiss binary
+*.hnsw binary
+*.parquet binary
+*.arrow binary
+*.pkl binary
+*.pickle binary
+
+# ============================================
+# 特定目录标记
+# ============================================
+data-core/ export-ignore
+database/*.sqlite linguist-generated
+models/*.bin linguist-generated

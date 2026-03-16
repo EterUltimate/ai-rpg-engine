@@ -39,7 +39,7 @@
 
 ```bash
 # 克隆仓库
-git clone <repository-url>
+git clone https://github.com/EterUltimate/ai-rpg-engine.git
 cd ai-rpg-engine
 
 # 安装前端依赖
@@ -87,15 +87,23 @@ npm run dev
 
 ```
 ai-rpg-engine/
-├── frontend/          # React前端应用
+├── LICENSE               # MIT License (仅针对代码)
+├── DATA_LICENSE.md       # RAG数据专用协议
+├── NOTICE_ADDENDUM.md    # 重要许可声明
+├── frontend/             # React前端应用
 ├── backend/
-│   ├── gateway/       # Go API网关
+│   ├── gateway/          # Go API网关
 │   └── services/
 │       ├── game-engine/  # 游戏引擎服务
 │       └── ai-engine/    # AI推理服务
-├── database/          # 数据库文件
-├── models/            # AI模型文件
-└── docs/              # 文档
+├── data-core/            # 🔒 受限制的RAG数据目录
+│   ├── vectors/          # 向量索引文件
+│   └── knowledge_base/   # 知识库文件
+├── database/             # 数据库文件
+├── models/               # AI模型文件
+├── scripts/              # 构建和部署脚本
+│   └── build_own_data.py # 构建自定义数据的脚本
+└── docs/                 # 文档
 ```
 
 ## 📖 文档
@@ -114,6 +122,88 @@ ai-rpg-engine/
 - [ ] LLM集成
 - [ ] 多端打包
 
+---
+
+## ⚠️ 重要许可声明与数据使用限制
+
+### 1. 许可范围区分 (License Scope Separation)
+
+本项目采用 **混合许可模式**：
+
+| 组件类型 | 包含目录 | 许可协议 | 允许商用 | 允许二次分发 |
+| :--- | :--- | :--- | :---: | :---: |
+| **源代码** | `frontend/`, `backend/`, `gateway/`, `docs/`, `scripts/` | **MIT License** | ✅ 是 | ✅ 是 |
+| **RAG 核心数据** | `data-core/`, `database/`, `models/`, `*.bin`, `*.sqlite`, `vectors/` | **NC-ND 学习许可** | 🛑 **否** | 🛑 **否** |
+
+### 2. RAG 数据库特别条款
+
+本项目中包含的 **RAG 数据库核心内容**（预置向量、嵌入模型权重、剧情知识库等）仅供**学习和研究使用**。
+
+- ❌ **严禁**将预置的 RAG 数据文件用于任何商业产品或服务
+- ❌ **严禁**将预置的 RAG 数据文件二次分发（包括修改后的版本）
+- 💡 **建议**：如需商用，请使用本引擎代码架构，并自行采集、清洗和构建符合您业务需求的数据集
+
+### 3. 合规使用指南
+
+- **开发者**：您可以自由 Fork、修改和部署代码部分。在部署时，请确保移除或替换受限制的 `database/`、`models/` 和 `data-core/` 目录下的预置文件
+- **研究者**：您可以在本地完整运行项目进行学术分析，但不得公开分享包含预置数据的完整构建包
+
+> **法律声明**：任何忽略此声明并滥用 RAG 数据内容的行为，均视为对作者知识产权的侵犯，作者保留追究法律责任的权利。
+
+### 4. 构建自己的数据
+
+我们提供了 `scripts/build_own_data.py` 脚本，帮助您构建自己的 RAG 数据库，从而完全规避许可限制：
+
+```bash
+python scripts/build_own_data.py --input your_data/ --output data-core/
+```
+
+---
+
 ## 📄 许可证
 
+### 源代码许可证
+
+本项目源代码采用 **MIT License** 许可证。
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+```
 MIT License
+
+Copyright (c) 2024 EterUltimate
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### RAG 数据许可证
+
+RAG 数据库核心内容采用 **非商业学习许可协议**。详见 [DATA_LICENSE.md](./DATA_LICENSE.md)。
+
+---
+
+## 🤝 贡献
+
+欢迎贡献代码！请查看 [CONTRIBUTING.md](./CONTRIBUTING.md) 了解详情。
+
+**注意**：贡献的代码将采用 MIT License，但不得包含受限制的数据内容。
+
+## 📞 联系方式
+
+如有问题或建议，请提交 Issue 或 Pull Request。

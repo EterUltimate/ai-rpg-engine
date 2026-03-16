@@ -14,19 +14,42 @@ build/
 *.egg
 .eggs/
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# ============================================
+# RAG 数据文件 (受 DATA_LICENSE.md 约束)
+# ============================================
+# 数据库文件 - 仅供学习使用，禁止商业用途
+database/*.sqlite
+database/*.sqlite3
+database/*.db
 database/chromadb/
 
-# Models (large files)
+# 模型文件 - 仅供学习使用，禁止商业用途
+models/*.bin
+models/*.gguf
 models/llm/*.gguf
 models/llm/*.bin
 models/embeddings/
 models/rerankers/
 
+# 向量索引文件 - 仅供学习使用，禁止商业用途
+data-core/vectors/*.hnsw
+data-core/vectors/*.index
+data-core/vectors/*.faiss
+data-core/knowledge_base/*.jsonl
+vectors/
+
+# 通用数据文件
+*.bin
+*.sqlite
+*.sqlite3
+*.db
+*.gguf
+*.faiss
+*.hnsw
+
+# ============================================
 # IDE
+# ============================================
 .vscode/
 .idea/
 *.swp
@@ -54,12 +77,14 @@ tmp/
 temp/
 *.tmp
 
-# Binaries
+# Binaries (可执行文件)
 *.exe
 *.dll
 *.so
 *.dylib
 backend/gateway/gateway
+backend/gateway/gateway.exe
+backend/gateway/gateway_new.exe
 
 # Testing
 .coverage
@@ -69,3 +94,13 @@ htmlcov/
 # Misc
 *.bak
 *.backup
+
+# ============================================
+# 大型数据文件 (使用 Git LFS 或单独下载)
+# ============================================
+# 如果需要共享数据，请使用 Git LFS
+# 或在 README 中提供下载链接
+*.parquet
+*.arrow
+*.pkl
+*.pickle

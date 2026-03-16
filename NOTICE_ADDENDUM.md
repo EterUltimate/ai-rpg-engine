@@ -6,7 +6,7 @@
 
 | 组件类型 | 包含目录 | 许可协议 | 允许商用 | 允许二次分发 |
 | :--- | :--- | :--- | :---: | :---: |
-| **源代码** | `frontend/`, `backend/`, `gateway/`, `docs/`, `scripts/` | **MIT License** | ✅ 是 | ✅ 是 |
+| **源代码** | `frontend/`, `backend/`, `gateway/`, `docs/`, `scripts/` | **AGPL-3.0** | ✅ 是 (需开源) | ✅ 是 (需开源) |
 | **RAG 核心数据** | `data-core/`, `database/`, `models/`, `*.bin`, `*.sqlite`, `vectors/` | **NC-ND 学习许可** | 🛑 **否** | 🛑 **否** |
 
 ---

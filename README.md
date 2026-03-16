@@ -132,7 +132,7 @@ ai-rpg-engine/
 
 | 组件类型 | 包含目录 | 许可协议 | 允许商用 | 允许二次分发 |
 | :--- | :--- | :--- | :---: | :---: |
-| **源代码** | `frontend/`, `backend/`, `gateway/`, `docs/`, `scripts/` | **MIT License** | ✅ 是 | ✅ 是 |
+| **源代码** | `frontend/`, `backend/`, `gateway/`, `docs/`, `scripts/` | **AGPL-3.0** | ✅ 是 (需开源) | ✅ 是 (需开源) |
 | **RAG 核心数据** | `data-core/`, `database/`, `models/`, `*.bin`, `*.sqlite`, `vectors/` | **NC-ND 学习许可** | 🛑 **否** | 🛑 **否** |
 
 ### 2. RAG 数据库特别条款
@@ -164,33 +164,16 @@ python scripts/build_own_data.py --input your_data/ --output data-core/
 
 ### 源代码许可证
 
-本项目源代码采用 **MIT License** 许可证。
+本项目源代码采用 **GNU Affero General Public License v3.0 (AGPL-3.0)** 许可证。
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-```
-MIT License
+**AGPL-3.0 主要特点：**
 
-Copyright (c) 2024 EterUltimate
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+- ✅ 你可以自由使用、修改和分发本软件
+- ✅ 任何修改版本必须以相同许可证开源
+- ✅ 通过网络提供服务时，必须向用户提供源代码
+- 📖 查看 [LICENSE](./LICENSE) 文件了解完整条款
 
 ### RAG 数据许可证
 
@@ -202,7 +185,7 @@ RAG 数据库核心内容采用 **非商业学习许可协议**。详见 [DATA_L
 
 欢迎贡献代码！请查看 [CONTRIBUTING.md](./CONTRIBUTING.md) 了解详情。
 
-**注意**：贡献的代码将采用 MIT License，但不得包含受限制的数据内容。
+**注意**：贡献的代码将采用 AGPL-3.0 许可证，但不得包含受限制的数据内容。
 
 ## 📞 联系方式
 

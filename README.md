@@ -1,4 +1,3 @@
-```md
 # AI-RPG Engine
 
 > 一个由大语言模型驱动的图形化 AI RPG 引擎 / 游戏原型。
@@ -161,7 +160,7 @@ ai-rpg-engine/
 ├── LICENSE
 ├── DATA_LICENSE.md
 └── NOTICE_ADDENDUM.md
-```
+
 
 ---
 

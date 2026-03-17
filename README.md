@@ -143,7 +143,6 @@ http://localhost:5173
 
 ## 📁 项目结构
 
-```text
 ai-rpg-engine/
 ├── frontend/                # React + Phaser 前端
 ├── backend/
@@ -231,4 +230,4 @@ ai-rpg-engine/
 目前已具备可运行的 MVP，但仍在快速迭代与工程收敛中。
 
 如果你愿意试用、提 Issue、补文档或帮忙优化部署体验，我会非常感谢。
-```
+

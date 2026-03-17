@@ -1,0 +1,134 @@
+# Docker Compose 演示环境配置
+# 用于演示和测试，使用预构建镜像和优化的配置
+
+version: '3.8'
+
+services:
+  # 前端Web服务器（生产构建）
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:8000
+    image: ai-rpg-frontend:demo
+    container_name: ai-rpg-frontend-demo
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      gateway:
+        condition: service_healthy
+    networks:
+      - ai-rpg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Go API网关（生产模式）
+  gateway:
+    build:
+      context: ./backend/gateway
+      dockerfile: Dockerfile
+    image: ai-rpg-gateway:demo
+    container_name: ai-rpg-gateway-demo
+    ports:
+      - "8000:8000"
+    environment:
+      - GIN_MODE=release
+      - GAME_ENGINE_URL=http://game-engine:8001
+      - AI_ENGINE_URL=http://ai-engine:8002
+    depends_on:
+      game-engine:
+        condition: service_healthy
+      ai-engine:
+        condition: service_healthy
+    networks:
+      - ai-rpg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 游戏引擎服务
+  game-engine:
+    build:
+      context: ./backend/services/game-engine
+      dockerfile: Dockerfile
+    image: ai-rpg-game-engine:demo
+    container_name: ai-rpg-game-engine-demo
+    ports:
+      - "8001:8001"
+    volumes:
+      # 数据库持久化
+      - ai-rpg-database:/app/database
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite+aiosqlite:///app/database/sqlite/game.db
+      - LOG_LEVEL=INFO
+    networks:
+      - ai-rpg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # AI推理服务（Lite模式）
+  ai-engine:
+    build:
+      context: ./backend/services/ai-engine
+      dockerfile: Dockerfile
+    image: ai-rpg-ai-engine:demo
+    container_name: ai-rpg-ai-engine-demo
+    ports:
+      - "8002:8002"
+    volumes:
+      # 模型文件（需要预先下载）
+      - ./models:/app/models:ro
+      # 数据库持久化
+      - ai-rpg-database:/app/database
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LLM_MODEL_PATH=/app/models/llm/model.gguf
+      - CHROMADB_PATH=/app/database/chromadb
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - LOG_LEVEL=INFO
+      # 启用Lite模式以降低资源需求
+      - LITE_MODE=true
+      - DISABLE_RERANKER=true
+    networks:
+      - ai-rpg-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  ai-rpg-network:
+    driver: bridge
+    name: ai-rpg-network-demo
+
+volumes:
+  ai-rpg-database:
+    name: ai-rpg-database-demo

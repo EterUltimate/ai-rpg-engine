@@ -142,23 +142,28 @@ http://localhost:5173
 ---
 
 ## 📁 项目结构
+
 ```text
 ai-rpg-engine/
-├── frontend/                # React + Phaser 前端
+├── LICENSE               # AGPL-3.0 License (源代码许可)
+├── DATA_LICENSE.md       # RAG数据专用协议 (NC-ND 学习许可)
+├── NOTICE_ADDENDUM.md    # 重要许可声明
+├── frontend/             # React + Phaser 前端
 ├── backend/
-│   ├── gateway/             # Go API 网关
+│   ├── gateway/          # Go API 网关
 │   └── services/
-│       ├── game-engine/     # Python 游戏引擎
-│       └── ai-engine/       # Python AI / RAG 服务
-├── data-core/               # 🔒 受限制的 RAG 数据目录
-├── database/                # 数据库与本地存储
-├── models/                  # 本地模型目录
-├── scripts/                 # 安装、构建、诊断脚本
-├── docs/                    # 项目文档
-├── QUICKSTART.md
-├── LICENSE
-├── DATA_LICENSE.md
-└── NOTICE_ADDENDUM.md
+│       ├── game-engine/  # Python 游戏引擎
+│       └── ai-engine/    # Python AI / RAG 服务
+├── data-core/            # 🔒 受限制的 RAG 数据目录
+│   ├── vectors/          # 向量索引文件
+│   └── knowledge_base/   # 知识库文件
+├── database/             # 数据库与本地存储
+├── models/               # 本地模型目录
+├── scripts/              # 安装、构建、诊断脚本
+│   ├── dev.py            # 统一启动入口
+│   ├── doctor.py         # 环境诊断工具
+│   └── build_own_data.py # 构建自定义数据的脚本
+└── docs/                 # 项目文档
 ```
 
 ---
@@ -169,6 +174,8 @@ ai-rpg-engine/
 - [架构设计](./docs/architecture.md)
 - [API 文档](./docs/api-spec.md)
 - [部署指南](./docs/deployment.md)
+- [Docker 部署](./docs/docker-deployment.md)
+- [Lite 模式说明](./docs/lite-mode.md)
 - [贡献指南](./CONTRIBUTING.md)
 
 ---

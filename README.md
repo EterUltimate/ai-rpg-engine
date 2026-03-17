@@ -142,7 +142,7 @@ http://localhost:5173
 ---
 
 ## 📁 项目结构
-
+```text
 ai-rpg-engine/
 ├── frontend/                # React + Phaser 前端
 ├── backend/
@@ -159,7 +159,7 @@ ai-rpg-engine/
 ├── LICENSE
 ├── DATA_LICENSE.md
 └── NOTICE_ADDENDUM.md
-
+```
 
 ---
 

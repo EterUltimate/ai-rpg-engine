@@ -24,6 +24,11 @@
 | **Python** | 3.10+ | 后端服务 | [python.org](https://www.python.org/) |
 | **Go** | 1.22+ | API 网关 | [golang.org](https://golang.org/) |
 
+**Windows Python 安装注意事项**:
+- 推荐从 [python.org](https://www.python.org/) 下载安装，会自动安装 Python Launcher (`py` 命令)
+- 如果从 Microsoft Store 安装，可能需要手动添加到 PATH
+- 脚本会自动检测 `py` 或 `python` 命令
+
 ### 可选软件
 
 - **Git**: 用于克隆仓库和版本控制

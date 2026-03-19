@@ -11,7 +11,19 @@ echo ║   AI-RPG Engine 模型下载               ║
 echo ╚════════════════════════════════════════╝
 echo.
 
-REM 调用 Python 脚本
-python scripts\download-models.py %*
+REM 检测并调用 Python
+where py >nul 2>&1
+if %errorlevel% equ 0 (
+    py scripts\download-models.py %*
+) else (
+    where python >nul 2>&1
+    if %errorlevel% equ 0 (
+        python scripts\download-models.py %*
+    ) else (
+        echo [ERROR] Python not found!
+        pause
+        exit /b 1
+    )
+)
 
 pause

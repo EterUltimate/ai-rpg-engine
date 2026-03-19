@@ -100,7 +100,7 @@ class SetupManager:
         frontend_dir = self.root / "frontend"
         
         if not frontend_dir.exists():
-            print(f"{Colors.FAIL}✗ 前端目录不存在: {frontend_dir}{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[X] 前端目录不存在: {frontend_dir}{Colors.ENDC}\n")
             self.errors.append("前端目录不存在")
             return False
         
@@ -113,21 +113,21 @@ class SetupManager:
                 timeout=5
             )
             if result.returncode != 0:
-                print(f"{Colors.FAIL}✗ Node.js 未安装{Colors.ENDC}\n")
+                print(f"{Colors.FAIL}[X] Node.js 未安装{Colors.ENDC}\n")
                 self.errors.append("Node.js 未安装")
                 return False
-            print(f"{Colors.OKGREEN}✓ Node.js {result.stdout.strip()}{Colors.ENDC}\n")
+            print(f"{Colors.OKGREEN}[OK] Node.js {result.stdout.strip()}{Colors.ENDC}\n")
         except:
-            print(f"{Colors.FAIL}✗ Node.js 未安装{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[X] Node.js 未安装{Colors.ENDC}\n")
             self.errors.append("Node.js 未安装")
             return False
         
         # 安装依赖
         print(f"{Colors.BOLD}[1/2] 安装 npm 依赖...{Colors.ENDC}\n")
         if self.run_command(['npm', 'install'], cwd=frontend_dir):
-            print(f"\n{Colors.OKGREEN}✓ npm 依赖安装成功{Colors.ENDC}\n")
+            print(f"\n{Colors.OKGREEN}[OK] npm 依赖安装成功{Colors.ENDC}\n")
         else:
-            print(f"\n{Colors.FAIL}✗ npm 依赖安装失败{Colors.ENDC}\n")
+            print(f"\n{Colors.FAIL}[X] npm 依赖安装失败{Colors.ENDC}\n")
             self.errors.append("npm 依赖安装失败")
             return False
         
@@ -136,10 +136,10 @@ class SetupManager:
         node_modules = frontend_dir / "node_modules"
         if node_modules.exists():
             count = len(list(node_modules.iterdir()))
-            print(f"{Colors.OKGREEN}✓ node_modules 存在 ({count} 个包){Colors.ENDC}\n")
+            print(f"{Colors.OKGREEN}[OK] node_modules 存在 ({count} 个包){Colors.ENDC}\n")
             return True
         else:
-            print(f"{Colors.FAIL}✗ node_modules 不存在{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[X] node_modules 不存在{Colors.ENDC}\n")
             self.errors.append("node_modules 不存在")
             return False
     
@@ -150,7 +150,7 @@ class SetupManager:
         print(f"{Colors.HEADER}{'='*60}{Colors.ENDC}\n")
         
         if not service_path.exists():
-            print(f"{Colors.FAIL}✗ 服务目录不存在: {service_path}{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[X] 服务目录不存在: {service_path}{Colors.ENDC}\n")
             self.warnings.append(f"{service_name} 目录不存在")
             return False
         
@@ -164,12 +164,12 @@ class SetupManager:
                 timeout=5
             )
             if result.returncode != 0:
-                print(f"{Colors.FAIL}✗ Python 未安装{Colors.ENDC}\n")
+                print(f"{Colors.FAIL}[X] Python 未安装{Colors.ENDC}\n")
                 self.errors.append("Python 未安装")
                 return False
-            print(f"{Colors.OKGREEN}✓ {result.stdout.strip()}{Colors.ENDC}\n")
+            print(f"{Colors.OKGREEN}[OK] {result.stdout.strip()}{Colors.ENDC}\n")
         except:
-            print(f"{Colors.FAIL}✗ Python 未安装{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[X] Python 未安装{Colors.ENDC}\n")
             self.errors.append("Python 未安装")
             return False
         
@@ -178,13 +178,13 @@ class SetupManager:
         if not venv_path.exists():
             print(f"{Colors.BOLD}[1/3] 创建虚拟环境...{Colors.ENDC}\n")
             if self.run_command([python_cmd, '-m', 'venv', 'venv'], cwd=service_path):
-                print(f"{Colors.OKGREEN}✓ 虚拟环境创建成功{Colors.ENDC}\n")
+                print(f"{Colors.OKGREEN}[OK] 虚拟环境创建成功{Colors.ENDC}\n")
             else:
-                print(f"{Colors.FAIL}✗ 虚拟环境创建失败{Colors.ENDC}\n")
+                print(f"{Colors.FAIL}[X] 虚拟环境创建失败{Colors.ENDC}\n")
                 self.errors.append(f"{service_name} 虚拟环境创建失败")
                 return False
         else:
-            print(f"{Colors.OKCYAN}ℹ 虚拟环境已存在，跳过创建{Colors.ENDC}\n")
+            print(f"{Colors.OKCYAN}[i] 虚拟环境已存在，跳过创建{Colors.ENDC}\n")
         
         # 激活虚拟环境并安装依赖
         if platform.system() == 'Windows':
@@ -204,22 +204,22 @@ class SetupManager:
             print(f"\n{Colors.BOLD}[3/3] 安装 Python 依赖...{Colors.ENDC}\n")
             if self.run_command([str(pip_path), 'install', '-r', 'requirements.txt'], 
                               cwd=service_path):
-                print(f"\n{Colors.OKGREEN}✓ Python 依赖安装成功{Colors.ENDC}\n")
+                print(f"\n{Colors.OKGREEN}[OK] Python 依赖安装成功{Colors.ENDC}\n")
             else:
-                print(f"\n{Colors.FAIL}✗ Python 依赖安装失败{Colors.ENDC}\n")
+                print(f"\n{Colors.FAIL}[X] Python 依赖安装失败{Colors.ENDC}\n")
                 self.errors.append(f"{service_name} Python 依赖安装失败")
                 return False
         else:
-            print(f"{Colors.WARNING}⚠ requirements.txt 不存在{Colors.ENDC}\n")
+            print(f"{Colors.WARNING}[!] requirements.txt 不存在{Colors.ENDC}\n")
             self.warnings.append(f"{service_name} requirements.txt 不存在")
         
         # 验证安装
         print(f"{Colors.BOLD}验证安装...{Colors.ENDC}\n")
         if venv_path.exists():
-            print(f"{Colors.OKGREEN}✓ 虚拟环境存在: {venv_path.relative_to(self.root)}{Colors.ENDC}\n")
+            print(f"{Colors.OKGREEN}[OK] 虚拟环境存在: {venv_path.relative_to(self.root)}{Colors.ENDC}\n")
             return True
         else:
-            print(f"{Colors.FAIL}✗ 虚拟环境不存在{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[X] 虚拟环境不存在{Colors.ENDC}\n")
             return False
     
     def setup_go_gateway(self) -> bool:
@@ -231,7 +231,7 @@ class SetupManager:
         gateway_dir = self.root / "backend" / "gateway"
         
         if not gateway_dir.exists():
-            print(f"{Colors.WARNING}⚠ Go 网关目录不存在（可选）{Colors.ENDC}\n")
+            print(f"{Colors.WARNING}[!] Go 网关目录不存在（可选）{Colors.ENDC}\n")
             self.warnings.append("Go 网关目录不存在")
             return False
         
@@ -244,31 +244,46 @@ class SetupManager:
                 timeout=5
             )
             if result.returncode != 0:
-                print(f"{Colors.WARNING}⚠ Go 未安装（可选）{Colors.ENDC}\n")
+                print(f"{Colors.WARNING}[!] Go 未安装（可选）{Colors.ENDC}\n")
                 self.warnings.append("Go 未安装")
                 return False
-            print(f"{Colors.OKGREEN}✓ {result.stdout.strip()}{Colors.ENDC}\n")
+            print(f"{Colors.OKGREEN}[OK] {result.stdout.strip()}{Colors.ENDC}\n")
         except:
-            print(f"{Colors.WARNING}⚠ Go 未安装（可选）{Colors.ENDC}\n")
+            print(f"{Colors.WARNING}[!] Go 未安装（可选）{Colors.ENDC}\n")
             self.warnings.append("Go 未安装")
             return False
         
         # 下载依赖
-        print(f"{Colors.BOLD}[1/2] 下载 Go 模块依赖...{Colors.ENDC}\n")
+        print(f"{Colors.BOLD}[1/3] 检查Go依赖...{Colors.ENDC}\n")
         if self.run_command(['go', 'mod', 'download'], cwd=gateway_dir):
-            print(f"{Colors.OKGREEN}✓ Go 模块下载成功{Colors.ENDC}\n")
+            print(f"{Colors.OKGREEN}[OK] Go 模块下载成功{Colors.ENDC}\n")
         else:
-            print(f"{Colors.FAIL}✗ Go 模块下载失败{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[X] Go 模块下载失败{Colors.ENDC}\n")
             self.warnings.append("Go 模块下载失败")
             return False
         
+        # 编译 Go 程序
+        print(f"{Colors.BOLD}[2/3] 编译Go程序...{Colors.ENDC}\n")
+        exe_name = "gateway.exe" if platform.system() == 'Windows' else "gateway"
+        if self.run_command(['go', 'build', '-o', exe_name, 'cmd/main.go'], cwd=gateway_dir):
+            print(f"{Colors.OKGREEN}[OK] Go 网关编译成功{Colors.ENDC}\n")
+        else:
+            print(f"{Colors.FAIL}[X] Go 网关构建失败{Colors.ENDC}\n")
+            self.errors.append("Go 网关构建失败")
+            return False
+        
         # 验证
+        print(f"{Colors.BOLD}[3/3] 验证安装...{Colors.ENDC}\n")
         go_sum = gateway_dir / "go.sum"
-        if go_sum.exists():
-            print(f"{Colors.OKGREEN}✓ go.sum 存在{Colors.ENDC}\n")
+        gateway_exe = gateway_dir / exe_name
+        
+        if gateway_exe.exists():
+            file_size = gateway_exe.stat().st_size / (1024 * 1024)  # MB
+            print(f"{Colors.OKGREEN}[OK] 网关可执行文件存在: {exe_name} ({file_size:.2f} MB){Colors.ENDC}\n")
             return True
         else:
-            print(f"{Colors.WARNING}⚠ go.sum 不存在{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[X] 网关可执行文件不存在{Colors.ENDC}\n")
+            self.errors.append("网关可执行文件不存在")
             return False
     
     def create_directories(self):
@@ -291,12 +306,12 @@ class SetupManager:
             if not full_path.exists():
                 try:
                     full_path.mkdir(parents=True, exist_ok=True)
-                    print(f"{Colors.OKGREEN}✓ 创建: {dir_path}{Colors.ENDC}")
+                    print(f"{Colors.OKGREEN}[OK] 创建: {dir_path}{Colors.ENDC}")
                 except Exception as e:
-                    print(f"{Colors.FAIL}✗ 创建失败: {dir_path} - {e}{Colors.ENDC}")
+                    print(f"{Colors.FAIL}[X] 创建失败: {dir_path} - {e}{Colors.ENDC}")
                     self.errors.append(f"无法创建目录: {dir_path}")
             else:
-                print(f"{Colors.OKCYAN}ℹ 已存在: {dir_path}{Colors.ENDC}")
+                print(f"{Colors.OKCYAN}[i] 已存在: {dir_path}{Colors.ENDC}")
         
         print()
     
@@ -307,29 +322,29 @@ class SetupManager:
         print(f"{Colors.HEADER}{'='*60}{Colors.ENDC}\n")
         
         if self.errors:
-            print(f"{Colors.FAIL}❌ 错误 ({len(self.errors)}):{Colors.ENDC}")
+            print(f"{Colors.FAIL}[ERROR] 错误 ({len(self.errors)}):{Colors.ENDC}")
             for error in self.errors:
-                print(f"  {Colors.FAIL}• {error}{Colors.ENDC}")
+                print(f"  {Colors.FAIL}- {error}{Colors.ENDC}")
             print()
         
         if self.warnings:
-            print(f"{Colors.WARNING}⚠️  警告 ({len(self.warnings)}):{Colors.ENDC}")
+            print(f"{Colors.WARNING}[!]️  警告 ({len(self.warnings)}):{Colors.ENDC}")
             for warning in self.warnings:
-                print(f"  {Colors.WARNING}• {warning}{Colors.ENDC}")
+                print(f"  {Colors.WARNING}- {warning}{Colors.ENDC}")
             print()
         
         if not self.errors:
             if not self.warnings:
-                print(f"{Colors.OKGREEN}✅ 所有依赖安装成功！{Colors.ENDC}\n")
+                print(f"{Colors.OKGREEN}[SUCCESS] 所有依赖安装成功！{Colors.ENDC}\n")
             else:
-                print(f"{Colors.OKGREEN}✓ 基础依赖安装成功（有部分可选项未安装）{Colors.ENDC}\n")
+                print(f"{Colors.OKGREEN}[OK] 基础依赖安装成功（有部分可选项未安装）{Colors.ENDC}\n")
             
             print("下一步:")
             print("  1. 下载模型: python scripts/download-models.py")
             print("  2. 启动服务: python scripts/dev.py")
             print("  3. 访问游戏: http://localhost:5173\n")
         else:
-            print(f"{Colors.FAIL}❌ 安装未完成，请解决上述错误后重试{Colors.ENDC}\n")
+            print(f"{Colors.FAIL}[ERROR] 安装未完成，请解决上述错误后重试{Colors.ENDC}\n")
 
 
 def main():

@@ -1,36 +1,57 @@
-import React, { useState, useRef, useEffect } from 'react'
+/**
+ * EnhancedChat.tsx
+ *
+ * NPC / 叙述者对话界面（流式打字效果）
+ *
+ * 对话链路：
+ *   EnhancedChat → gameApi.aiAPI.streamChat (fetch SSE)
+ *     → POST /api/v1/actions/talk-ai/stream (gateway:8000)
+ *       → game-engine:8001 → ai-engine:8002
+ *
+ * Bug fix vs 旧版：
+ *   1. streamingMessage 使用 useRef 而非 useState 存中间文本，避免 onComplete 闭包捕获旧值
+ *   2. 调用新的 aiAPI.streamChat / aiAPI.talkAI，不再使用不存在的旧 export
+ */
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import useGameStore from '../../store/gameStore'
 import { aiAPI } from '../../api/gameApi'
 
 const EnhancedChat: React.FC = () => {
-  const { 
-    isChatOpen, 
-    chatMessages, 
+  const {
+    isChatOpen,
+    chatMessages,
     currentNPC,
     character,
     currentScene,
-    addMessage, 
-    closeChat 
+    addMessage,
+    closeChat,
   } = useGameStore()
-  
-  const [input, setInput] = useState('')
+
+  const [input, setInput]         = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [streamingMessage, setStreamingMessage] = useState('')
+  // 流式文本：用 state 驱动渲染，用 ref 在 onComplete 回调里读取最终值（避免闭包旧值问题）
+  const [streamingText, setStreamingText] = useState('')
+  const streamingRef = useRef('')
+  const cleanupRef   = useRef<(() => void) | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatMessages, streamingMessage])
+  }, [chatMessages, streamingText])
 
+  // 首次打开对话框时插入系统提示
   useEffect(() => {
     if (isChatOpen && currentNPC && chatMessages.length === 0) {
       addMessage({
         role: 'system',
         content: `你开始与${currentNPC.name}交谈。`,
-        npcName: currentNPC.name
+        npcName: currentNPC.name,
       })
     }
   }, [isChatOpen, currentNPC])
+
+  // 组件卸载时关闭流
+  useEffect(() => () => { cleanupRef.current?.() }, [])
 
   if (!isChatOpen) return null
 
@@ -40,118 +61,138 @@ const EnhancedChat: React.FC = () => {
 
     const userMessage = input.trim()
     setInput('')
-    
-    // 添加玩家消息
-    addMessage({ 
-      role: 'player', 
-      content: userMessage 
-    })
+    addMessage({ role: 'player', content: userMessage })
     setIsLoading(true)
-    setStreamingMessage('')
+    streamingRef.current = ''
+    setStreamingText('')
 
+    // 优先流式，若流式失败则降级同步
     try {
-      // 使用流式API
-      const cleanup = aiAPI.streamChat(
+      cleanupRef.current = aiAPI.streamChat(
         userMessage,
         character.id,
         currentScene.id,
+        // onChunk：收到一段文字
         (chunk) => {
-          setStreamingMessage(prev => prev + chunk)
+          streamingRef.current += chunk
+          setStreamingText(streamingRef.current)
         },
-        () => {
-          // 完成时添加完整消息
-          const fullResponse = streamingMessage
-          if (fullResponse) {
+        // onComplete：流结束，把完整文本存入消息列表
+        (fullText) => {
+          const final = fullText || streamingRef.current
+          setStreamingText('')
+          streamingRef.current = ''
+          if (final) {
             addMessage({
               role: 'ai',
-              content: fullResponse,
-              npcName: currentNPC?.name
+              content: final,
+              npcName: currentNPC?.name,
             })
           }
-          setStreamingMessage('')
           setIsLoading(false)
         },
-        (error) => {
-          console.error('Stream error:', error)
-          addMessage({ 
-            role: 'system', 
-            content: 'AI服务暂时不可用,请稍后再试。' 
-          })
+        // onError：流失败，降级同步调用
+        async (err) => {
+          console.warn('[EnhancedChat] stream error, falling back to sync:', err)
+          setStreamingText('')
+          streamingRef.current = ''
+          try {
+            const res = await aiAPI.talkAI(
+              userMessage,
+              character.id,
+              currentNPC?.id,
+              currentScene.id,
+            )
+            addMessage({
+              role: 'ai',
+              content: res.message,
+              npcName: currentNPC?.name,
+            })
+          } catch (fallbackErr) {
+            console.error('[EnhancedChat] sync fallback also failed:', fallbackErr)
+            addMessage({ role: 'system', content: 'AI服务暂时不可用，请稍后再试。' })
+          }
           setIsLoading(false)
-          setStreamingMessage('')
         },
-        currentNPC?.id
+        currentNPC?.id,
       )
 
-      // 设置超时清理
+      // 超时兜底：30s 后强制收尾
       setTimeout(() => {
-        cleanup()
-        setIsLoading(false)
-      }, 30000)
-      
-    } catch (error) {
-      console.error('Chat error:', error)
-      addMessage({ 
-        role: 'system', 
-        content: '发生错误,请稍后再试。' 
-      })
+        cleanupRef.current?.()
+        if (isLoading) {
+          const partial = streamingRef.current
+          setStreamingText('')
+          streamingRef.current = ''
+          if (partial) {
+            addMessage({ role: 'ai', content: partial, npcName: currentNPC?.name })
+          }
+          setIsLoading(false)
+        }
+      }, 30_000)
+    } catch (err) {
+      console.error('[EnhancedChat] unexpected error:', err)
+      addMessage({ role: 'system', content: '发生错误，请稍后再试。' })
       setIsLoading(false)
     }
   }
 
-  const handleQuickAction = (action: string) => {
-    setInput(action)
-  }
+  const handleQuickAction = useCallback((text: string) => setInput(text), [])
 
   const quickActions = [
-    { label: '打招呼', text: '你好!' },
-    { label: '询问任务', text: '有什么我可以帮忙的吗?' },
-    { label: '询问位置', text: '能告诉我这个地方的信息吗?' },
-    { label: '交易', text: '我想看看你的商品。' }
+    { label: '打招呼',   text: '你好！' },
+    { label: '询问任务', text: '有什么我可以帮忙的吗？' },
+    { label: '询问位置', text: '能告诉我这个地方的信息吗？' },
+    { label: '交易',     text: '我想看看你的商品。' },
   ]
+
+  // NPC 图标映射
+  const npcIcon = currentNPC
+    ? ({ merchant: '🏪', quest_giver: '📜', enemy: '⚔️', neutral: '👤' }[currentNPC.type] ?? '👤')
+    : '🎭'
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-3xl h-[700px] flex flex-col border border-gray-700">
-        {/* 头部 */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900 to-blue-900">
+
+        {/* ── 头部 ── */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900 to-blue-900 rounded-t-2xl">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-2xl">
-              {currentNPC ? '👤' : '🎭'}
+            <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-2xl select-none">
+              {npcIcon}
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">
-                {currentNPC?.name || 'AI助手'}
+                {currentNPC?.name ?? 'AI助手'}
               </h2>
               <p className="text-xs text-gray-300">
-                {currentNPC?.type || '游戏主持'}
+                {currentNPC?.type ?? '游戏主持'}
               </p>
             </div>
           </div>
           <button
             onClick={closeChat}
-            className="text-gray-300 hover:text-white transition-colors text-2xl"
+            className="text-gray-300 hover:text-white transition-colors text-2xl leading-none"
+            aria-label="关闭"
           >
             ✕
           </button>
         </div>
 
-        {/* 消息列表 */}
+        {/* ── 消息列表 ── */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-950">
-          {chatMessages.length === 0 && !isLoading && (
+          {chatMessages.length === 0 && !isLoading && !streamingText && (
             <div className="text-center text-gray-500 mt-20">
               <span className="text-6xl mb-4 block">💬</span>
-              <p className="text-lg">开始对话吧!</p>
-              <p className="text-sm mt-2">输入任何内容与AI交互</p>
+              <p className="text-lg">开始对话吧！</p>
+              <p className="text-sm mt-2">输入任何内容与 AI 交互</p>
             </div>
           )}
-          
+
           {chatMessages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex ${
-                msg.role === 'player' ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex ${msg.role === 'player' ? 'justify-end' : 'justify-start'}`}
             >
               <div
                 className={`max-w-[75%] rounded-2xl p-4 ${
@@ -176,9 +217,9 @@ const EnhancedChat: React.FC = () => {
               </div>
             </div>
           ))}
-          
-          {/* 流式消息 */}
-          {streamingMessage && (
+
+          {/* 流式气泡（打字效果） */}
+          {streamingText && (
             <div className="flex justify-start">
               <div className="max-w-[75%] rounded-2xl p-4 bg-gray-800 text-gray-100 border border-gray-700">
                 {currentNPC && (
@@ -186,39 +227,40 @@ const EnhancedChat: React.FC = () => {
                     {currentNPC.name}
                   </div>
                 )}
-                <div className="text-sm whitespace-pre-wrap">
-                  {streamingMessage}
-                  <span className="animate-pulse">▊</span>
+                <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                  {streamingText}
+                  <span className="animate-pulse ml-0.5">▊</span>
                 </div>
               </div>
             </div>
           )}
-          
-          {/* 加载指示器 */}
-          {isLoading && !streamingMessage && (
+
+          {/* 等待指示器（未收到第一个 chunk 前） */}
+          {isLoading && !streamingText && (
             <div className="flex justify-start">
               <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 快捷操作 */}
+        {/* ── 快捷操作按钮（仅 NPC 对话时显示） ── */}
         {currentNPC && (
           <div className="px-4 py-2 border-t border-gray-800 overflow-x-auto">
             <div className="flex space-x-2">
-              {quickActions.map((action, index) => (
+              {quickActions.map((action, i) => (
                 <button
-                  key={index}
+                  key={i}
                   onClick={() => handleQuickAction(action.text)}
-                  className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs rounded-full whitespace-nowrap transition-colors"
+                  disabled={isLoading}
+                  className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs rounded-full whitespace-nowrap transition-colors disabled:opacity-40"
                 >
                   {action.label}
                 </button>
@@ -227,16 +269,17 @@ const EnhancedChat: React.FC = () => {
           </div>
         )}
 
-        {/* 输入框 */}
-        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-700 bg-gray-900">
+        {/* ── 输入框 ── */}
+        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-700 bg-gray-900 rounded-b-2xl">
           <div className="flex space-x-3">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={currentNPC ? `对${currentNPC.name}说...` : "输入你的行动或对话..."}
+              placeholder={currentNPC ? `对${currentNPC.name}说...` : '输入你的行动或对话...'}
               className="flex-1 bg-gray-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-700"
               disabled={isLoading}
+              autoFocus
             />
             <button
               type="submit"
@@ -247,6 +290,7 @@ const EnhancedChat: React.FC = () => {
             </button>
           </div>
         </form>
+
       </div>
     </div>
   )

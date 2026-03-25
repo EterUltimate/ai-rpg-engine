@@ -233,3 +233,111 @@ export const healthCheck = async (): Promise<boolean> => {
     return false
   }
 }
+
+// ── AI 对话 API（game-engine /actions/talk-ai）────────────────────────────────
+// EnhancedChat 使用此模块与 NPC 对话，后端由 game-engine → ai-engine 完整链路提供支持
+export const aiAPI = {
+  /**
+   * 同步 NPC 对话 —— 通过 /actions/talk-ai 走完整游戏链路
+   */
+  talkAI: async (
+    message: string,
+    characterId: string,
+    npcId?: string,
+    sceneId?: string,
+  ): Promise<{ message: string; aiUsed: boolean; fallback: boolean }> => {
+    const response = await aiClient.post('/api/v1/actions/talk-ai', {
+      character_id: characterId,
+      message,
+      ...(npcId   ? { npc_id:   npcId   } : {}),
+      ...(sceneId ? { scene_id: sceneId } : {}),
+    })
+    const data = response.data
+    return {
+      message:  data.message ?? data.response ?? '',
+      aiUsed:   data.effects?.ai_used   ?? false,
+      fallback: data.effects?.fallback  ?? true,
+    }
+  },
+
+  /**
+   * 流式 NPC 对话（SSE）—— 通过 /actions/talk-ai/stream
+   * 返回一个清理函数，调用方在组件卸载时调用即可关闭连接。
+   * SSE 格式：data: {"delta": "...", "done": false}
+   */
+  streamChat: (
+    message: string,
+    characterId: string,
+    sceneId: string,
+    onChunk: (chunk: string) => void,
+    onComplete: (fullText: string) => void,
+    onError: (error: Error) => void,
+    npcId?: string,
+  ): (() => void) => {
+    // 使用 fetch + ReadableStream 支持 POST body 的 SSE
+    let cancelled = false
+    let accumulated = ''
+
+    const run = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/actions/talk-ai/stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            character_id: characterId,
+            message,
+            scene_id: sceneId,
+            ...(npcId ? { npc_id: npcId } : {}),
+          }),
+        })
+
+        if (!res.ok || !res.body) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buf = ''
+
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done || cancelled) break
+
+          buf += decoder.decode(value, { stream: true })
+
+          const lines = buf.split('\n')
+          buf = lines.pop() ?? ''
+
+          for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed.startsWith('data:')) continue
+            const raw = trimmed.slice(5).trim()
+            if (!raw || raw === '[DONE]') continue
+
+            try {
+              const parsed = JSON.parse(raw)
+              if (parsed.delta) {
+                accumulated += parsed.delta
+                onChunk(parsed.delta)
+              }
+              if (parsed.done) {
+                onComplete(accumulated)
+                return
+              }
+            } catch {
+              accumulated += raw
+              onChunk(raw)
+            }
+          }
+        }
+
+        if (!cancelled) onComplete(accumulated)
+      } catch (err) {
+        if (!cancelled) onError(err instanceof Error ? err : new Error(String(err)))
+      }
+    }
+
+    run()
+    return () => { cancelled = true }
+  },
+}

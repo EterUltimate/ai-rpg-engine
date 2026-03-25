@@ -310,7 +310,7 @@ class WorldManager:
             if quest.status == "available":
                 # 检查前置任务
                 if all(
-                    self.quests.get(pre_id)?.status == "completed"
+                    (q := self.quests.get(pre_id)) is not None and q.status == "completed"
                     for pre_id in quest.prerequisites
                 ):
                     available.append(quest)

@@ -108,6 +108,8 @@ func main() {
 		// GET  /api/v1/actions/available/:id
 		// POST /api/v1/actions/move
 		// POST /api/v1/actions/talk
+		// POST /api/v1/actions/talk-ai         → AI 驱动 NPC 对话（同步）
+		// POST /api/v1/actions/talk-ai/stream  → AI 驱动 NPC 对话（流式 SSE）
 		// POST /api/v1/actions/investigate
 		// POST /api/v1/actions/rest
 		// POST /api/v1/actions/quest/accept
@@ -118,6 +120,8 @@ func main() {
 			actions.GET("/available/:characterId", gameProxy.Handler())
 			actions.POST("/move",                 gameProxy.Handler())
 			actions.POST("/talk",                 gameProxy.Handler())
+			actions.POST("/talk-ai",              gameProxy.Handler())
+			actions.POST("/talk-ai/stream",       gameProxy.SSEHandler())
 			actions.POST("/investigate",          gameProxy.Handler())
 			actions.POST("/rest",                 gameProxy.Handler())
 			actions.POST("/quest/accept",         gameProxy.Handler())

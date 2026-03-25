@@ -145,12 +145,14 @@ class GameManager:
                 "message": "角色不存在"
             }
         
-        # 执行动作
+        # 执行动作（把 db 注入 parameters，供 action_handler 内部使用）
+        params = dict(parameters or {})
+        params["_db"] = db
         result = await self.action_handler.handle_action(
             action_type=action_type,
             character_id=character_id,
             target=target,
-            parameters=parameters or {}
+            parameters=params
         )
         
         # 应用状态变化

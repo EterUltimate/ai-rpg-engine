@@ -4,6 +4,9 @@
 from typing import Dict, Any, Optional
 from enum import Enum
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ActionType(Enum):
@@ -154,47 +157,101 @@ class ActionHandler:
         target: str,
         parameters: Dict[str, Any]
     ) -> ActionResult:
-        """处理对话动作"""
-        # 获取NPC
+        """
+        处理对话动作。
+        流程：
+          1. 基础校验（NPC 存在、在当前场景）
+          2. 组装游戏上下文（关系值、可用任务）
+          3. 调用 ai-engine 生成 NPC 对话
+          4. 返回结果；ai-engine 不可用时自动降级到本地文本
+        """
+        # ── 1. 基础校验 ──────────────────────────────────────────
         npc = self.world.get_npc(target)
         if not npc:
             return ActionResult(False, "目标NPC不存在")
-        
-        # 检查NPC是否在当前场景
-        character = await self.characters.get_character(character_id)
+
+        # 从 parameters 取出 db session（由 GameManager.perform_action 注入）
+        db = parameters.get("_db")
+
+        character = await self.characters.get_character(character_id, db)
+        if not character:
+            return ActionResult(False, "角色不存在")
+
         current_scene_id = character.get("scene_id", "village_001")
-        
         if npc.location != current_scene_id:
             return ActionResult(False, f"{npc.name}不在这里")
-        
-        # 获取关系值
+
+        # ── 2. 组装上下文 ─────────────────────────────────────────
         relationship = npc.relationships.get(character_id, 0)
-        
-        # 生成对话提示
-        message = f"你与{npc.name}交谈。"
-        
-        if relationship > 0:
-            message += f"{npc.name}对你很友好。"
-        elif relationship < 0:
-            message += f"{npc.name}对你有些戒备。"
-        
-        # 根据NPC类型添加特殊信息
-        if npc.npc_type == "quest_giver":
-            available_quests = [
-                q for q in self.world.quests.values()
-                if q.status == "available" and character_id not in q.assigned_to
-            ]
-            if available_quests:
-                message += f"\n{npc.name}似乎有任务要交给你。"
-        
+        world_state = self.world.get_world_state()
+        scene = self.world.get_scene(current_scene_id)
+        scene_name = scene.name if scene else current_scene_id
+        world_time = world_state.get("time_of_day", "白天")
+
+        # 玩家本次说的话（可选，由前端通过 parameters["message"] 传入）
+        player_message: str = parameters.get(
+            "message",
+            f"你好，{npc.name}。"
+        )
+
+        # 构造背景补充给 AI（附加到 player_message 末尾作为 context hint）
+        context_hints: list[str] = []
+        if relationship > 30:
+            context_hints.append(f"（{npc.name}与玩家是老朋友，关系亲密）")
+        elif relationship < -30:
+            context_hints.append(f"（{npc.name}对玩家心存警惕）")
+
+        # 检查可分配任务
+        available_quests = [
+            q for q in self.world.quests.values()
+            if q.status == "available" and q.assigned_to != character_id
+        ]
+        if npc.npc_type == "quest_giver" and available_quests:
+            quest_titles = "、".join(q.title for q in available_quests[:2])
+            context_hints.append(f"（{npc.name}有任务想委托给玩家：{quest_titles}）")
+
+        full_message = player_message
+        if context_hints:
+            full_message += " " + " ".join(context_hints)
+
+        # ── 3. 调用 AI ────────────────────────────────────────────
+        try:
+            from app.ai_client import chat as ai_chat   # 延迟导入避免循环
+            ai_result = await ai_chat(
+                message=full_message,
+                character_id=character_id,
+                scene_id=current_scene_id,
+                npc=npc.to_dict(),
+                scene_name=scene_name,
+                world_time=world_time,
+            )
+            npc_reply = ai_result["response"]
+            ai_used = ai_result.get("ai_used", False)
+            fallback = ai_result.get("fallback", False)
+        except Exception as exc:   # noqa: BLE001
+            logger.warning("AI chat call failed unexpectedly: %s", exc)
+            npc_reply = f"{npc.name}沉默片刻，没有说话。"
+            ai_used = False
+            fallback = True
+
+        # ── 4. 组装返回消息 ───────────────────────────────────────
+        # 前缀行保留，供前端渲染角色名气泡
+        display_message = f"**{npc.name}**：{npc_reply}"
+
+        # 补充任务提示（仅在降级模式下才加，AI 模式让 LLM 自己提）
+        if fallback and npc.npc_type == "quest_giver" and available_quests:
+            display_message += f"\n\n{npc.name}似乎有任务要交给你。"
+
         return ActionResult(
             success=True,
-            message=message,
+            message=display_message,
             effects={
                 "npc_id": target,
                 "npc_name": npc.name,
                 "relationship": relationship,
-                "npc_type": npc.npc_type
+                "npc_type": npc.npc_type,
+                "ai_used": ai_used,
+                "fallback": fallback,
             }
         )
     
